@@ -1,0 +1,201 @@
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Update</title>
+<style>
+body{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+}
+.content{
+  font-size: 1.2em;
+  margin-top: 18vh;
+  text-align: center;
+}
+.btn-grad {
+  background-image: linear-gradient(324deg,#ff6ec4,#7873f5);
+  cursor: pointer;
+  margin: 10px;
+  padding: 15px 45px;
+  text-align: center;
+  transition: 0.5s;
+  background-size: 200% auto;
+  color: white;
+  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  border: 0;
+}
+.btn-grad:hover {
+transform: scale(1.02);
+}
+.RP {
+  --hue: 285;
+  --holesize: 65%;
+  --track-bg: hsl(233, 34%, 92%);
+  height: 30vmin;
+  width: 30vmin;
+  min-width: 100px;
+  min-height: 100px;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  place-items: center;
+  position: relative;
+  font-weight: 700;
+  font-size: max(5.5vmin, 1.4rem);
+  margin: auto;
+}
+.RP::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 50%;
+  z-index: -1;
+  background: conic-gradient(
+    hsl(var(--hue) 100% 70%),
+    hsl(var(--hue) 100% 40%),
+    hsl(var(--hue) 100% 70%) var(--progress, 0%),
+    var(--track-bg) var(--progress, 0%) 100%
+  );
+
+  -webkit-mask-image: radial-gradient(
+    transparent var(--holesize),
+    black calc(var(--holesize) + 0.5px)
+  );
+
+          mask-image: radial-gradient(
+    transparent var(--holesize),
+    black calc(var(--holesize) + 0.5px)
+  );
+}
+.file {
+  outline: none;
+  opacity: 0;
+  width: 0.1px;
+  height: 0.1px;
+  position: absolute;
+}
+.file-input{
+margin: auto;
+    width: 200px;
+}
+.file-input label {
+  position: relative;
+  height: 50px;
+  border-radius: 25px;
+  background: linear-gradient(40deg,#ff6ec4,#7873f5);
+  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform .2s ease-out;
+}
+.file-name {
+  position: absolute;
+  bottom: -35px;
+  left: 10px;
+  font-size: 0.85rem;
+  color: #555;
+}
+input:hover + label,
+input:focus + label {
+  transform: scale(1.02);
+}
+input:focus + label {
+  outline: 1px solid #000;
+  outline: -webkit-focus-ring-color auto 2px;
+}
+</style>
+</head>
+<body>
+
+<div class="content">
+  <div class="file-input">
+    <input type="file" id="file" class="file">
+    <label for="file">
+      Select file
+      <p class="file-name"></p>
+    </label>
+  </div>
+  <br>
+  <br>
+  <div class="RP" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+  <h3 id="status"></h3>
+  <button id="btn-send" class="btn-grad">UPLOAD</button>
+</div>
+<script>
+var p = window.location.pathname;
+function upload_path(f){
+  if (p === "/upload"){
+    return p+"?filename="+encodeURIComponent(f);
+  }else if(p === "/upgrade"){
+    return p+"?partition=ota_1";
+  }
+}
+const rP = document.querySelector(".RP"),
+  file = document.querySelector("#file");
+function _(e) {
+  return document.getElementById(e);
+}
+function reboot(){
+  var t = new XMLHttpRequest();
+  t.open("GET", "/reboot");
+  t.send();
+}
+function uploadFile() {
+  var e = _("file").files[0];
+  if(e){
+    var t = new XMLHttpRequest();
+    t.upload.addEventListener("progress", progressHandler, !1),
+      t.addEventListener("load", completeHandler, !1),
+      t.addEventListener("error", errorHandler, !1),
+      t.addEventListener("abort", abortHandler, !1),
+      t.open("POST", upload_path(e.name)),
+      t.send(e);
+  }
+}
+file.addEventListener("change", (e) => {
+  setProgress(0);
+  const [r] = e.target.files,
+    { name: t, size: n } = r,
+    a = `${t} - ${(n / 1e3).toFixed(2)}KB`;
+  document.querySelector(".file-name").textContent = a;
+});
+const setProgress = (e) => {
+  const r = `${e}%`;
+  rP.style.setProperty("--progress", r), (rP.innerHTML = r), rP.setAttribute("aria-valuenow", r);
+};
+function progressHandler(e) {
+  var r = Math.round((e.loaded / e.total) * 100);
+  setProgress(r);
+}
+function completeHandler(e) {
+  var rsp = JSON.parse(e.target.responseText);
+  if(rsp["success"] == true){
+    if(p === "/upgrade"){
+      _("status").innerHTML = "Flash Success";
+      reboot();
+    }else if(p === "/upload"){
+      _("status").innerHTML = "Upload Success";
+    }
+  }
+}
+function errorHandler(e) {
+  _("status").innerHTML = "Upload Failed";
+}
+function abortHandler(e) {
+  _("status").innerHTML = "Upload Aborted";
+}
+_("btn-send").addEventListener("click", (e) => {
+  uploadFile();
+}),
+setProgress(0);
+_("btn-send").innerHTML = p.replace("/", "").toUpperCase();
+</script>
+</body>
+</html>

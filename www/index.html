@@ -1,0 +1,225 @@
+<html>
+<head>
+    <title>Panel</title>
+    <meta http-equiv="refresh" content="360">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+body{
+  background-color: #051010;
+
+}
+.items{
+    text-align: center;
+    background-color: #111111;
+    width: 260px;
+    margin: auto;
+}
+input[type=range] {
+  width: 100%;
+  margin: -3.1px 0;
+  background-color: transparent;
+  -webkit-appearance: none;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  background: #46262c;
+  border: 0;
+  border-radius: 24.3px;
+  width: 100%;
+  height: 28px;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  border: 2.9px solid #941e00;
+  border-radius: 36px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+input#warm[type=range]::-webkit-slider-thumb {
+  background: rgba(255, 200, 56, 0.93);
+}
+
+input#cold[type=range]::-webkit-slider-thumb {
+  background: rgba(24, 185, 255, 0.93);
+}
+
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #572f36;
+}
+input[type=range]::-moz-range-track {
+  background: #46262c;
+  border: 0;
+  border-radius: 24.3px;
+  width: 100%;
+  height: 31.2px;
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  background: rgba(255, 200, 56, 0.93);
+  border: 2.9px solid #941e00;
+  border-radius: 36px;
+  cursor: pointer;
+}
+input[type=range]::-ms-track {
+  background: transparent;
+  border-color: transparent;
+  border-width: 0 0;
+  color: transparent;
+  width: 100%;
+  height: 31.2px;
+  cursor: pointer;
+}
+input[type=range]::-ms-fill-lower {
+  background: #351d22;
+  border: 0;
+  border-radius: 48.6px;
+}
+input[type=range]::-ms-fill-upper {
+  background: #46262c;
+  border: 0;
+  border-radius: 48.6px;
+}
+input[type=range]::-ms-thumb {
+  width: 25px;
+  height: 25px;
+  background: rgba(255, 200, 56, 0.93);
+  border: 2.9px solid #941e00;
+  border-radius: 36px;
+  cursor: pointer;
+  margin-top: 0px;
+  /*Needed to keep the Edge thumb centred*/
+}
+input[type=range]:focus::-ms-fill-lower {
+  background: #46262c;
+}
+input[type=range]:focus::-ms-fill-upper {
+  background: #572f36;
+}
+    </style>
+    <script src="iro.min.js"></script>
+    <script>
+var ip = document.location.origin;
+var socket;
+var slider_cold;
+var slider_warm;
+var connected = false;
+
+function send(data) {
+  if(connected){
+    var byteArray = new Uint8Array(data);
+    socket.send(byteArray.buffer);
+  }
+}
+
+function set_color(r,g,b){
+    send([1, r, g, b]);
+}
+
+function set_warm(warm){
+    send([2, warm]);
+}
+
+function set_cold(cold){
+    send([3, cold]);
+}
+
+function handleReceive(message) {
+  var buffer = new Uint8Array(message.data);
+  colorPicker.color.rgb = {r: buffer[0], g: buffer[1], b: buffer[2]};
+  slider_warm.value = buffer[3];
+  slider_cold.value = buffer[4];
+}
+
+var colorPicker = new iro.ColorPicker("#color-picker-container", {
+width: 260,
+borderWidth: 0,
+wheelLightness: false,
+  layout: [
+    { 
+      component: iro.ui.Wheel,
+    },
+    {
+      component: iro.ui.Slider,
+    }
+  ]
+});
+
+function onColorChange(color, changes) {
+    var r = colorPicker.color.rgb.r;
+    var g = colorPicker.color.rgb.g;
+    var b = colorPicker.color.rgb.b;
+    set_color(r, g, b);
+}
+colorPicker.on('color:change', onColorChange);
+
+function startWebSocket(){
+//WebSocket
+    socket = new WebSocket('ws://'+window.location.hostname+'/ws');
+    socket.binaryType = 'arraybuffer';
+    socket.onopen = function() {
+      connected = true;
+      send([4]);
+    }
+    socket.onclose = function(e) {
+      connected = false;
+      console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+      setTimeout(function() {
+        startWebSocket();
+      }, 1000);
+    };
+    socket.onerror = function(e) {
+      connected = false;
+      console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+      setTimeout(function() {
+        startWebSocket();
+      }, 1000);
+    };
+    socket.onmessage = handleReceive;
+}
+
+function init(){  
+    slider_warm = document.getElementById("warm");
+    slider_warm.oninput = function() {
+      set_warm(this.value);
+    }
+
+    slider_cold = document.getElementById("cold");
+    slider_cold.oninput = function() {
+      set_cold(this.value);
+    }
+    
+    startWebSocket();
+    
+    window.setInterval(function(){
+        send([4]);
+    }, 5000);
+}
+
+</script>
+
+<head>
+<body onload="init()">
+
+<div class="content">
+    <div class="items">
+        <div id="color-picker-container"></div>
+        <br>
+        <input type="range" min="0" max="255" class="slider" id="warm">
+        <br>
+        <br>
+        <input type="range" min="0" max="255" class="slider" id="cold">
+    </div>
+</div>
+
+</body>
+</html>
+
+
+
