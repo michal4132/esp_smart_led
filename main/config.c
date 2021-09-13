@@ -101,9 +101,9 @@ bool read_config(){
 
   invert = cJSON_GetObjectItemCaseSensitive(config_json, "invert");
   if(cJSON_IsTrue(invert)){
-    printf("invert: true\n");
+    set_inverse(true);
   }else if(cJSON_IsFalse(invert)){
-    printf("invert: false\n");
+    set_inverse(false);
   }
 
   cJSON_Delete(config_json);

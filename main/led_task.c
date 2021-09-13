@@ -46,6 +46,13 @@ const uint16_t conv_table[256] = {
 
 Color color;
 Color last_color;
+Color target_color;
+bool led_inversed;
+bool fade_done = true;
+
+void set_inverse(bool inversed){
+  led_inversed = inversed;
+}
 
 bool color_equal(Color c1, Color c2){
   if(c1.red == c2.red && c1.green == c2.green && c1.blue == c2.blue && c1.warm == c2.warm && c1.cold == c2.cold){
@@ -72,26 +79,88 @@ void set_color(uint8_t r, uint8_t g, uint8_t b){
   color.blue = b;
 }
 
-void apply_color_duty(){
-  duties[0] = conv_table[LED_INVERSED-color.red];
-  duties[1] = conv_table[LED_INVERSED-color.green];
-  duties[2] = conv_table[LED_INVERSED-color.blue];
-  duties[3] = conv_table[LED_INVERSED-color.warm];
-  duties[4] = conv_table[LED_INVERSED-color.cold];
+void apply_color(){
+  if(led_inversed){
+    duties[0] = conv_table[LED_INVERSED-color.red];
+    duties[1] = conv_table[LED_INVERSED-color.green];
+    duties[2] = conv_table[LED_INVERSED-color.blue];
+    duties[3] = conv_table[LED_INVERSED-color.warm];
+    duties[4] = conv_table[LED_INVERSED-color.cold];
+  }else{
+    duties[0] = conv_table[color.red];
+    duties[1] = conv_table[color.green];
+    duties[2] = conv_table[color.blue];
+    duties[3] = conv_table[color.warm];
+    duties[4] = conv_table[color.cold];
+  }
+  pwm_set_duties(duties);
+  pwm_start();
+  last_color = color;
+}
+
+void set_color_fade(uint8_t r, uint8_t g, uint8_t b, uint8_t warm, uint8_t cold){
+  Color c;
+  c.red = r;
+  c.green = g;
+  c.blue = b;
+  c.warm = warm;
+  c.cold = cold;
+  target_color = c;
+  fade_done = false;
+}
+
+void fade_color(){
+  int16_t r_diff = target_color.red - color.red;
+  int16_t g_diff = target_color.green - color.green;
+  int16_t b_diff = target_color.blue - color.blue;
+
+  int16_t warm_diff = target_color.warm - color.warm;
+  int16_t cold_diff = target_color.cold - color.cold;
+
+  if(r_diff > 0){
+    color.red+=1;
+  }else if(r_diff < 0){
+    color.red-=1;
+  }
+  if(g_diff > 0){
+    color.green+=1;
+  }else if(g_diff < 0){
+    color.green-=1;
+  }
+  if(b_diff > 0){
+    color.blue+=1;
+  }else if(b_diff < 0){
+    color.blue-=1;
+  }
+
+  if(warm_diff > 0){
+    color.warm+=1;
+  }else if(warm_diff < 0){
+    color.warm-=1;
+  }
+  if(cold_diff > 0){
+    color.cold+=1;
+  }else if(cold_diff < 0){
+    color.cold-=1;
+  }
+
+  if(r_diff == 0 && g_diff == 0 && b_diff == 0 && warm_diff == 0 && cold_diff == 0){
+    fade_done = true;
+  }
 }
 
 void led_task(){
-  apply_color_duty();
   pwm_init(PWM_PERIOD, duties, 5, pin_num);
   pwm_set_phases(phase);
-  pwm_start();
+  apply_color();
 
   while(1){
+    if(!fade_done){
+      fade_color();
+    }
+
     if(!color_equal(color, last_color)){
-      apply_color_duty();
-      pwm_set_duties(duties);
-      pwm_start();
-      last_color = color;
+      apply_color();
     }
     vTaskDelay(10 / portTICK_RATE_MS);
   }

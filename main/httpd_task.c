@@ -82,7 +82,7 @@ static void ICACHE_FLASH_ATTR websocket_recv(Websock *ws, char *data, int len, i
       break;
     case FADE_RGB:
       if(len == 6){
-        // fadeToColor(data[1], data[2], data[3], (data[4] << 8) + data[5]);
+				set_color_fade(data[1], data[2], data[3], data[4], data[5]);
       }
       break;
     case SET_ALL:
