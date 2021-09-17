@@ -6,6 +6,12 @@
 
 #define TAG "led_task"
 
+Color color;
+Color last_color;
+Color target_color;
+bool led_inversed;
+bool fade_done = true;
+
 // pwm pin number
 const uint32_t pin_num[5] = {
   RED_GPIO,
@@ -44,12 +50,6 @@ const uint16_t conv_table[256] = {
    1711, 1729, 1748, 1766, 1785, 1804, 1823, 1842, 1861, 1881, 1900, 1920, 1940, 1960, 1980, 2000,
   };
 
-Color color;
-Color last_color;
-Color target_color;
-bool led_inversed;
-bool fade_done = true;
-
 void set_inverse(bool inversed){
   led_inversed = inversed;
 }
@@ -66,10 +66,16 @@ Color get_colors(){
 }
 
 void set_warm(uint8_t w){
+  if(w > MAX_BRIGHTNESS - color.cold){
+    w = MAX_BRIGHTNESS - color.cold;
+  }
   color.warm = w;
 }
 
 void set_cold(uint8_t c){
+  if(c > (MAX_BRIGHTNESS - color.warm)){
+    c = MAX_BRIGHTNESS - color.warm;
+  }
   color.cold = c;
 }
 

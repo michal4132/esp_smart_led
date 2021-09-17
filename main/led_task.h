@@ -2,13 +2,24 @@
 #define __LED_TASK_H__
 #include <stdint.h>
 
-#define RED_GPIO           4
-#define GREEN_GPIO         12
-#define BLUE_GPIO          14
-#define WARM_GPIO          13
-#define COLD_GPIO          5
+// ACTION RGB BULB (2020)
+// #define RED_GPIO           4
+// #define GREEN_GPIO         12
+// #define BLUE_GPIO          14
+// #define WARM_GPIO          13
+// #define COLD_GPIO          5
+
+// ACTION RGB BULB (2021)
+#define RED_GPIO          5
+#define GREEN_GPIO        13
+#define BLUE_GPIO         4
+#define WARM_GPIO         12
+#define COLD_GPIO         14
+
 #define PWM_PERIOD         2000
 #define LED_INVERSED       255
+// some led bulbs cannot handle max brightness for a long time, so here's cap
+#define MAX_BRIGHTNESS     250
 
 typedef struct Color {
    uint8_t red;
