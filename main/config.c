@@ -62,9 +62,7 @@ bool read_config(){
       colors[color_pos++] = color->valueint;
     }
   }
-  set_color(colors[0], colors[1], colors[2]);
-  set_warm(colors[3]);
-  set_cold(colors[4]);
+  set_color_fade(colors[0], colors[1], colors[2], colors[3], colors[4]);
 
   apSSID = cJSON_GetObjectItemCaseSensitive(config_json, "apSSID");
   if (cJSON_IsString(apSSID) && (apSSID->valuestring != NULL)){

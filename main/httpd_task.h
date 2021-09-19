@@ -16,6 +16,7 @@
 #define GET_STATUS            0x04
 #define FADE_RGB              0x05
 #define SET_ALL               0x06
+#define SET_WHITE             0x07
 
 typedef struct {
 	uint32_t stringPos;

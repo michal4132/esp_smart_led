@@ -38,6 +38,9 @@ HttpdBuiltInUrl builtInUrls[] = {
   ROUTE_CGI("/upload", upload_get_handler),
   ROUTE_CGI("/delete", delete_handler),
 
+  ROUTE_CGI("/flashinfo.json", cgiGetFlashInfo),
+  ROUTE_CGI_ARG("/erase", cgiEraseFlash, &uploadParams),
+
   // WebSocket
   ROUTE_WS("/ws", websocket_connect),
 
@@ -58,16 +61,6 @@ static void ICACHE_FLASH_ATTR websocket_recv(Websock *ws, char *data, int len, i
         set_color(data[1], data[2], data[3]);
       }
       break;
-    case SET_WARM:
-      if(len == 2){
-        set_warm(data[1]);
-      }
-      break;
-    case SET_COLD:
-      if(len == 2){
-        set_cold(data[1]);
-      }
-      break;
     case GET_STATUS:
       {
         uint8_t c_data[5];
@@ -75,8 +68,8 @@ static void ICACHE_FLASH_ATTR websocket_recv(Websock *ws, char *data, int len, i
         c_data[0] = color.red;
         c_data[1] = color.green;
         c_data[2] = color.blue;
-        c_data[3] = color.warm;
-        c_data[4] = color.cold;
+        c_data[3] = color.temperature;
+        c_data[4] = color.brightness;
         cgiWebsocketSend(&httpdFreertosInstance.httpdInstance, ws, (const char*)&c_data, 5, flags);
       }
       break;
@@ -88,10 +81,14 @@ static void ICACHE_FLASH_ATTR websocket_recv(Websock *ws, char *data, int len, i
     case SET_ALL:
       if(len == 6){
         set_color(data[1], data[2], data[3]);
-        set_warm(data[4]);
-        set_cold(data[5]);
+				set_white(data[4], data[5]);
       }
       break;
+			case SET_WHITE:
+	      if(len == 3){
+					set_white(data[1], data[2]);
+	      }
+	      break;
   }
 }
 

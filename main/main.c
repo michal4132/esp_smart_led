@@ -65,7 +65,7 @@ void app_main(void){
   init_spiffs();
   read_config();
   #ifdef CONFIG_IDF_TARGET_ESP8266
-    xTaskCreate(led_task, "led_task", 1024 * 2, NULL, 5, NULL);
+      led_task_init();
   #endif
 
   ESP_ERROR_CHECK(esp_netif_init());
