@@ -3,10 +3,38 @@
     <title>Panel</title>
     <meta http-equiv="refresh" content="360">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name=apple-mobile-web-app-capable content=yes>
+    <meta name=apple-mobile-web-app-status-bar-style content=black>
     <style>
 body{
-  background-color: #051010;
+  margin: 0;
+  margin-top: 15px;
+  // webapp hack
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+  position: fixed;
 
+  background-color: #051010;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+}
+.scenes{
+  background-color: #252a2d;
+  border-radius: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  width: 250px;
+  border: solid 1px;
+}
+.scene{
+  color: #ccc;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: center;
+  cursor: pointer;
 }
 .items{
     text-align: center;
@@ -37,6 +65,7 @@ input[type=range]:focus {
 }
 
 input[type=range]::-webkit-slider-runnable-track {
+
   border: 0;
   border-radius: 24.3px;
   width: 100%;
@@ -45,16 +74,15 @@ input[type=range]::-webkit-slider-runnable-track {
 }
 
 input[type=range]::-webkit-slider-thumb {
-  margin-top: 4px;
-  width: 20px;
-  height: 20px;
-  border: 2.9px solid #941e00;
-  border-radius: 36px;
+  margin-top: 5px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   -webkit-appearance: none;
+  appearance: none;
+  border: 0;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><circle cx='9' cy='9' r='8' fill='none' stroke-width='2' stroke='%23000'/><circle cx='9' cy='9' r='6' stroke-width='2' stroke='%23fff' fill='none'/></svg>");
 }
-
-
 
 input[type=range]::-moz-range-track {
   background: #46262c;
@@ -118,11 +146,18 @@ var connected = false;
 var brightness = 0;
 var temperature = 0;
 
+startWebSocket();
+
+
 function send(data) {
   if(connected){
     var byteArray = new Uint8Array(data);
     socket.send(byteArray.buffer);
   }
+}
+
+function fade(r, g, b, t, c){
+  send([5, r, g, b, t, c]);
 }
 
 function set_color(r,g,b){
@@ -190,10 +225,11 @@ function startWebSocket(){
 }
 
 function set_white(){
-  send([7, brightness, temperature]);
+  send([7, temperature, brightness]);
 }
 
 function init(){  
+
     slider_brightness = document.getElementById("brightness");
     slider_brightness.oninput = function() {
         brightness = this.value;
@@ -206,11 +242,40 @@ function init(){
         set_white();
     }
     
-    startWebSocket();
+    document.getElementsByClassName("scenes")[0].innerHTML = "";
+    for(var i = 0; i < obj.length; i++){
+      var item = `<div class="scene">${ obj[i].name }</div>`;
+      document.getElementsByClassName("scenes")[0].innerHTML += item;
+    }
+    
+    var scenes = document.getElementsByClassName("scene");
+    for (var i = 0; i < scenes.length; i++) {
+      var scene_name = scenes[i];
+      scenes[i].addEventListener("click", sceneClick);
+    }
     
     window.setInterval(function(){
         send([4]);
     }, 5000);
+}
+
+//scenes
+var json = `[
+  {"name": "High", "color": [0,0,0,128,255]},
+  {"name": "Low", "color": [0,0,0,0,1]},
+  {"name": "Red", "color": [255,0,0,0,0]},
+  {"name": "Green", "color": [0,255,0,0,0]},
+  {"name": "Blue", "color": [0,0,255,0,0]}
+]`;
+var obj = JSON.parse(json);
+
+function sceneClick(event){
+  for(var i = 0; i < obj.length; i++){
+    if(obj[i]["name"] === event.target.innerHTML){
+      var color = obj[i]["color"];
+      fade(color[0], color[1], color[2], color[3], color[4]);
+    }
+  }
 }
 
 </script>
@@ -226,8 +291,14 @@ function init(){
         <br>
         <br>
         <input type="range" min="0" max="255" class="slider bri" id="brightness">
+        <br>
+        <br>
+        <div class="scenes"></div>
     </div>
 </div>
 
 </body>
 </html>
+
+
+

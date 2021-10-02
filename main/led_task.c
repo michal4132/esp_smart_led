@@ -52,14 +52,14 @@ void set_inverse(bool inversed){
   led_inversed = inversed;
 }
 
-bool ICACHE_FLASH_ATTR color_black(Color c){
+bool color_black(Color c){
   if(c.red == 0 && c.green == 0 && c.blue == 0 && c.brightness == 0){
     return true;
   }
   return false;
 }
 
-bool ICACHE_FLASH_ATTR color_equal(Color c1, Color c2){
+bool color_equal(Color c1, Color c2){
   if(c1.red == c2.red && c1.green == c2.green && c1.blue == c2.blue && c1.brightness == c2.brightness && c1.temperature == c2.temperature){
     return true;
   }
@@ -70,13 +70,15 @@ Color get_colors(){
   return color;
 }
 
-void ICACHE_FLASH_ATTR set_color(uint8_t r, uint8_t g, uint8_t b){
-  color.red = r;
-  color.green = g;
-  color.blue = b;
+void set_color(uint8_t r, uint8_t g, uint8_t b){
+  if(color.brightness < 50){
+    color.red = r;
+    color.green = g;
+    color.blue = b;
+  }
 }
 
-void ICACHE_FLASH_ATTR apply_color(){
+void apply_color(){
   if(led_inversed){
     duties[0] = conv_table[LED_INVERSED-color.red];
     duties[1] = conv_table[LED_INVERSED-color.green];
@@ -90,17 +92,17 @@ void ICACHE_FLASH_ATTR apply_color(){
   //https://www.desmos.com/calculator/vdxo6sj9uq
   //warm = \frac{2000}{255}z-\left(\frac{2000z}{255\cdot255}x\right)
   //cold = \left(\frac{2000z}{255\cdot255}x\right)
-  int16_t warm = (float)(7.8431372549)*color.brightness - ((2000*color.brightness*color.temperature)/(65025));
-  if(warm > 2000){
-    warm = 2000;
+  int16_t warm = (float)(MAX_PWM_DUTY/255)*color.brightness - ((MAX_PWM_DUTY*color.brightness*color.temperature)/(65025));
+  if(warm > MAX_PWM_DUTY){
+    warm = MAX_PWM_DUTY;
   }else if(warm < 0){
     warm = 0;
   }
   duties[3] = warm;
 
-  int16_t cold = (2000*color.brightness*color.temperature)/(65025);
-  if(cold > 2000){
-    cold = 2000;
+  int16_t cold = (MAX_PWM_DUTY*color.brightness*color.temperature)/(65025);
+  if(cold > MAX_PWM_DUTY){
+    cold = MAX_PWM_DUTY;
   }else if(cold < 0){
     cold = 0;
   }
@@ -111,10 +113,7 @@ void ICACHE_FLASH_ATTR apply_color(){
   last_color = color;
 }
 
-void ICACHE_FLASH_ATTR set_white(uint8_t brightness, uint8_t temperature){
-  if(brightness > MAX_BRIGHTNESS){
-    brightness = MAX_BRIGHTNESS;
-  }
+void set_white(uint8_t temperature, uint8_t brightness){
   color.brightness = brightness;
   color.temperature = temperature;
 }
@@ -125,9 +124,6 @@ void set_color_fade(uint8_t r, uint8_t g, uint8_t b, uint8_t temperature, uint8_
   c.green = g;
   c.blue = b;
 
-  if(brightness > MAX_BRIGHTNESS){
-    brightness = MAX_BRIGHTNESS;
-  }
   c.brightness = brightness;
   c.temperature = temperature;
 
@@ -135,7 +131,7 @@ void set_color_fade(uint8_t r, uint8_t g, uint8_t b, uint8_t temperature, uint8_
   fade_done = false;
 }
 
-void ICACHE_FLASH_ATTR fade_color(){
+void fade_color(){
   int16_t r_diff = target_color.red - color.red;
   int16_t g_diff = target_color.green - color.green;
   int16_t b_diff = target_color.blue - color.blue;
@@ -175,7 +171,7 @@ void ICACHE_FLASH_ATTR fade_color(){
   }
 }
 
-void ICACHE_FLASH_ATTR led_timer_callback(){
+void led_timer_callback(){
   if(!fade_done){
     fade_color();
   }
@@ -195,5 +191,4 @@ void led_task_init(){
 
   hw_timer_init(led_timer_callback, NULL);
   hw_timer_alarm_us(16667, true); // 60fps
-//  hw_timer_deinit();
 }
